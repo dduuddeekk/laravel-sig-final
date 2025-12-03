@@ -1,14 +1,25 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Http;
 use App\Http\Controllers\AuthController;
 
-// Halaman Utama (Map)
 Route::get('/', function () {
-    return view('welcome');
+    $user = null;
+    $token = session('api_token');
+
+    if ($token) {
+        // PERBAIKAN: Tambahkan withoutVerifying() di sini
+        $response = Http::withoutVerifying()->withToken($token)->get('https://gisapis.manpits.xyz/api/user');
+        
+        if ($response->successful()) {
+            $user = $response->json()['data']['user'];
+        }
+    }
+
+    return view('welcome', ['user' => $user]);
 })->name('home');
 
-// Guest (Belum Login)
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
@@ -16,5 +27,4 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
 });
 
-// Auth (Sudah Login/Ada Token)
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
