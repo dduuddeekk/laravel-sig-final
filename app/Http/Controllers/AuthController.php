@@ -25,8 +25,9 @@ class AuthController extends Controller
             'password' => 'required'
         ]);
 
-        // Tambahkan withoutVerifying() untuk bypass error SSL cURL 77
-        $response = Http::withoutVerifying()->post('https://gisapis.manpits.xyz/api/register', [
+        // PERBAIKAN: Menggabungkan env('API_URL') dengan 'register'
+        // Karena env diakhiri '/', maka 'register' tidak perlu '/' di depan
+        $response = Http::withoutVerifying()->post(env('API_URL') . 'register', [
             'name' => $request->name,
             'email' => $request->email,
             'password' => $request->password,
@@ -50,8 +51,8 @@ class AuthController extends Controller
             'password' => 'required'
         ]);
 
-        // Tambahkan withoutVerifying()
-        $response = Http::withoutVerifying()->post('https://gisapis.manpits.xyz/api/login', [
+        // PERBAIKAN: endpoint digabung
+        $response = Http::withoutVerifying()->post(env('API_URL') . 'login', [
             'email' => $request->email,
             'password' => $request->password,
         ]);
@@ -79,17 +80,19 @@ class AuthController extends Controller
         $apiMessage = 'Logout berhasil'; 
 
         if ($token) {
-            // Tambahkan withoutVerifying() sebelum withToken
-            $response = Http::withoutVerifying()->withToken($token)->post('https://gisapis.manpits.xyz/api/logout');
+            // PERBAIKAN: endpoint digabung
+            $response = Http::withoutVerifying()->withToken($token)->post(env('API_URL') . 'logout');
             
             $data = $response->json();
 
+            // Cek sukses logout API
             if ($response->successful() && isset($data['meta']['code']) && $data['meta']['code'] == 200) {
                 if (isset($data['meta']['message'])) {
                     $apiMessage = $data['meta']['message'];
                 }
             } else {
-                $apiMessage = $data['meta']['message'] ?? 'Terjadi kesalahan saat logout API';
+                // Opsional: Jika token expired, tetap logout dari local session
+                $apiMessage = $data['meta']['message'] ?? 'Sesi API berakhir, logout lokal berhasil.';
             }
         }
 
