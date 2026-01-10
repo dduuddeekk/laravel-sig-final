@@ -12,7 +12,7 @@ class RegionController extends Controller
 {
     public function getAllRegion(Request $request) {
         $baseUrl = env('API_URL');
-        $endPoint = '/mregion';
+        $endPoint = 'mregion';
         $apiUrl = $baseUrl . $endPoint;
 
         $cacheKey = 'all_regions_data';
@@ -59,7 +59,7 @@ class RegionController extends Controller
 
     public function getProvinceById(Request $request, $id) {
         $baseUrl = env('API_URL');
-        $endPoint = '/provinsi';
+        $endPoint = 'provinsi';
         $apiUrl = $baseUrl . $endPoint;
 
         $cacheKey = 'province_data_' . $id;
@@ -105,7 +105,7 @@ class RegionController extends Controller
 
     public function getKabupatenByProvinceId(Request $request, $id) {
         $baseUrl = env('API_URL');
-        $endPoint = '/kabupaten';
+        $endPoint = 'kabupaten';
         $apiUrl = $baseUrl . $endPoint;
 
         $cacheKey = 'kabupaten_data_' . $id;
@@ -151,7 +151,7 @@ class RegionController extends Controller
 
     public function getKecamatanByKabupatenId(Request $request, $id) {
         $baseUrl = env('API_URL');
-        $endPoint = '/kecamatan';
+        $endPoint = 'kecamatan';
         $apiUrl = $baseUrl . $endPoint;
 
         $cacheKey = 'kecamatan_data_' . $id;
@@ -197,7 +197,7 @@ class RegionController extends Controller
 
     public function getVillageByKecamatanId(Request $request, $id) {
         $baseUrl = env('API_URL');
-        $endPoint = '/desa';
+        $endPoint = 'desa';
         $apiUrl = $baseUrl . $endPoint;
 
         $cacheKey = 'desa_data_' . $id;
@@ -243,7 +243,7 @@ class RegionController extends Controller
 
     public function getKecamatanByVillageId(Request $request, $id) {
         $baseUrl = env('API_URL');
-        $endPoint = '/kecamatanbydesaid';
+        $endPoint = 'kecamatanbydesaid';
         $apiUrl = $baseUrl . $endPoint;
 
         $cacheKey = 'kecamatan_data_' . $id;
@@ -289,7 +289,7 @@ class RegionController extends Controller
 
     public function getKabupatenByKecamatanId(Request $request, $id) {
         $baseUrl = env('API_URL');
-        $endPoint = '/kabupatenbykecamatanid';
+        $endPoint = 'kabupatenbykecamatanid';
         $apiUrl = $baseUrl . $endPoint;
 
         $cacheKey = 'kabupaten_data_' . $id;
@@ -335,7 +335,7 @@ class RegionController extends Controller
 
     public function getProvinceByKabupatenId(Request $request, $id) {
         $baseUrl = env('API_URL');
-        $endPoint = '/provinsibykabupatenid';
+        $endPoint = 'provinsibykabupatenid';
         $apiUrl = $baseUrl . $endPoint;
 
         $cacheKey = 'province_data_' . $id;

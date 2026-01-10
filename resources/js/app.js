@@ -1,29 +1,101 @@
 import './bootstrap';
-
-// --- 1. IMPORT LIBRARY ---
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-
 import 'leaflet-draw';
 import 'leaflet-draw/dist/leaflet.draw.css';
-
 import * as turf from '@turf/turf';
 
-// --- 2. FIX ICON MARKER ---
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: import.meta.glob('leaflet/dist/images/marker-icon-2x.png', { as: 'url', eager: true }),
-    iconUrl: import.meta.glob('leaflet/dist/images/marker-icon.png', { as: 'url', eager: true }),
-    shadowUrl: import.meta.glob('leaflet/dist/images/marker-shadow.png', { as: 'url', eager: true }),
-});
+function encodePolyline(coordinates) {
+    let str = '';
+    let lastLat = 0, lastLng = 0;
 
-// --- 3. LOGIKA UTAMA ---
+    for (const point of coordinates) {
+        let lat = point[1]; 
+        let lng = point[0];
+
+        let latE5 = Math.round(lat * 1e5);
+        let lngE5 = Math.round(lng * 1e5);
+
+        let dLat = latE5 - lastLat;
+        let dLng = lngE5 - lastLng;
+
+        lastLat = latE5;
+        lastLng = lngE5;
+
+        str += encodeSigned(dLat) + encodeSigned(dLng);
+    }
+    return str;
+}
+
+function encodeSigned(v) {
+    v = v < 0 ? ~(v << 1) : (v << 1);
+    return encodeNumber(v);
+}
+
+function encodeNumber(v) {
+    let str = '';
+    while (v >= 0x20) {
+        str += String.fromCharCode((0x20 | (v & 0x1f)) + 63);
+        v >>= 5;
+    }
+    str += String.fromCharCode(v + 63);
+    return str;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     
+    const apiToken = document.querySelector('meta[name="api-token"]')?.getAttribute('content');
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'); 
     const mapElement = document.getElementById('map');
+    
     if (!mapElement) return;
 
-    // A. INISIALISASI MAP
+    const headers = {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${apiToken}`
+    };
+
+    // --- LOAD DROPDOWN ---
+    if(apiToken) {
+        loadDropdown('/mjenisjalan', 'selectJenis', 'id', 'jenisjalan', 'eksisting'); 
+        loadDropdown('/mkondisi', 'selectKondisi', 'id', 'kondisi', 'eksisting');
+        loadDropdown('/meksisting', 'selectEksisting', 'id', 'eksisting', 'eksisting');
+    }
+
+    function loadDropdown(url, elementId, valueKey, textKey, responseKey) {
+        fetch(url, { headers })
+        .then(res => res.json())
+        .then(data => {
+            let items = [];
+            if (responseKey && data[responseKey]) {
+                items = data[responseKey];
+            } else if (data.data) {
+                items = data.data;
+            } else if (Array.isArray(data)) {
+                items = data;
+            }
+
+            const select = document.getElementById(elementId);
+            if(select) {
+                select.innerHTML = '<option value="">Pilih...</option>';
+                if(Array.isArray(items)) {
+                    items.forEach(item => {
+                        const text = item[textKey] || item['nama'] || item['keterangan'] || '-';
+                        select.innerHTML += `<option value="${item[valueKey]}">${text}</option>`;
+                    });
+                }
+            }
+        })
+        .catch(err => console.error(`Gagal load ${url}:`, err));
+    }
+
+    delete L.Icon.Default.prototype._getIconUrl;
+    L.Icon.Default.mergeOptions({
+        iconRetinaUrl: import.meta.glob('leaflet/dist/images/marker-icon-2x.png', { as: 'url', eager: true }),
+        iconUrl: import.meta.glob('leaflet/dist/images/marker-icon.png', { as: 'url', eager: true }),
+        shadowUrl: import.meta.glob('leaflet/dist/images/marker-shadow.png', { as: 'url', eager: true }),
+    });
+
     const map = L.map('map', { zoomControl: false }).setView([-8.409518, 115.188919], 9);
     
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -34,19 +106,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const drawnItems = new L.FeatureGroup();
     map.addLayer(drawnItems);
 
-    // B. SETUP VARIABEL
     let isDrawing = false;
     let baliGeoJSON = null; 
-    let currentLayer = null; // <--- MENYIMPAN LAYER YANG BARU DIGAMBAR
+    let currentLayer = null; 
+    let currentDetectedDesaId = null;
 
     const loading = document.getElementById('loading');
     const drawBtn = document.getElementById('drawBtn');
     const sidebar = document.getElementById('resultSidebar');
     const sidebarContent = document.getElementById('sidebarContent');
+    const formModal = document.getElementById('formModal');
+    const form = document.getElementById('ruasJalanForm');
 
-    // C. LOAD GEOJSON (MEMORY ONLY)
     if (loading) loading.style.display = 'block';
-    
+
     fetch('/geojson/bali_complete_universal.geojson')
         .then(res => res.json())
         .then(data => {
@@ -58,40 +131,23 @@ document.addEventListener('DOMContentLoaded', () => {
             if (loading) loading.innerHTML = "Gagal memuat data wilayah.";
         });
 
-    // D. SETUP DRAW TOOLS
     const drawHandler = new L.Draw.Polyline(map, {
-        shapeOptions: {
-            color: '#f357a1',
-            weight: 5,
-            opacity: 0.8
-        },
-        icon: new L.DivIcon({ 
-            iconSize: new L.Point(10, 10), 
-            className: 'leaflet-div-icon leaflet-editing-icon' 
-        }),
-        touchIcon: new L.DivIcon({
-            iconSize: new L.Point(10, 10), 
-            className: 'leaflet-div-icon leaflet-editing-icon' 
-        })
+        shapeOptions: { color: '#f357a1', weight: 5, opacity: 0.8 },
+        icon: new L.DivIcon({ iconSize: new L.Point(10, 10), className: 'leaflet-div-icon leaflet-editing-icon' }),
+        touchIcon: new L.DivIcon({ iconSize: new L.Point(10, 10), className: 'leaflet-div-icon leaflet-editing-icon' })
     });
 
-    // E. LOGIC TOMBOL FAB (+)
     if (drawBtn) {
         drawBtn.addEventListener('click', () => {
             if (!isDrawing) {
-                // START DRAW
                 drawHandler.enable();
                 isDrawing = true;
                 drawBtn.classList.add('active');
                 drawBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
                 
                 if(sidebar) sidebar.classList.remove("open");
-
-                // Bersihkan gambar sebelumnya jika user klik tombol tambah lagi
                 drawnItems.clearLayers(); 
-
             } else {
-                // CANCEL DRAW
                 drawHandler.disable();
                 isDrawing = false;
                 drawBtn.classList.remove('active');
@@ -100,28 +156,28 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // F. SAAT SELESAI GAMBAR
     map.on(L.Draw.Event.CREATED, (e) => {
         const layer = e.layer;
-        
-        // Simpan layer ke variabel global agar bisa dihapus tombol "Hapus"
         currentLayer = layer; 
-        
         drawnItems.addLayer(layer);
 
-        // Reset tombol UI
         isDrawing = false;
         if (drawBtn) {
             drawBtn.classList.remove('active');
             drawBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
         }
 
-        // Jalankan Deteksi
         const drawnGeoJSON = layer.toGeoJSON();
+        
+        const lengthKm = turf.length(drawnGeoJSON, {units: 'kilometers'});
+        const lengthM = Math.round(lengthKm * 1000);
+        
+        const inputPanjang = document.getElementById('inputPanjang');
+        if(inputPanjang) inputPanjang.value = lengthM;
+
         detectRegion(drawnGeoJSON);
     });
 
-    // G. FUNGSI DETEKSI
     function detectRegion(roadGeoJSON) {
         if (!baliGeoJSON) {
             alert("Data wilayah sedang dimuat..."); return;
@@ -131,28 +187,32 @@ document.addEventListener('DOMContentLoaded', () => {
             provinsi: new Set(), kabupaten: new Set(), kecamatan: new Set(), desa: new Set()
         };
 
+        currentDetectedDesaId = null;
+
         baliGeoJSON.features.forEach((feature) => {
             let isIntersect = false;
-            try { 
-                isIntersect = turf.booleanIntersects(roadGeoJSON, feature); 
-            } catch (e) { console.warn(e); }
+            try { isIntersect = turf.booleanIntersects(roadGeoJSON, feature); } catch (e) {}
 
             if (isIntersect) {
                 const p = feature.properties;
-                if (p.level === 'desa') results.desa.add(p.name);
+                if (p.level === 'desa') {
+                    results.desa.add(p.name);
+                    if(!currentDetectedDesaId && p.id) currentDetectedDesaId = p.id;
+                }
                 else if (p.level === 'kecamatan') results.kecamatan.add(p.name);
                 else if (p.level === 'kabupaten') results.kabupaten.add(p.name);
                 results.provinsi.add("Bali");
             }
         });
 
-        // Simpan hasil deteksi sementara di object layer (opsional, untuk dikirim nanti)
-        // roadGeoJSON.properties = { detected_regions: results };
+        const inputDesaId = document.getElementById('inputDesaId');
+        if(inputDesaId) {
+            inputDesaId.value = currentDetectedDesaId || "";
+        }
 
         renderSidebar(results, roadGeoJSON);
     }
 
-    // H. RENDER HASIL & TOMBOL AKSI
     function renderSidebar(results, geojsonData) {
         let html = '';
         const item = (label, set) => {
@@ -169,14 +229,13 @@ document.addEventListener('DOMContentLoaded', () => {
         html += item("Kecamatan", results.kecamatan);
         html += item("Desa / Kelurahan", results.desa);
 
-        // --- TAMBAHAN: TOMBOL AKSI ---
         html += `
             <div class="sidebar-actions">
                 <button id="btnCancelResult" class="btn-action btn-cancel">
                     <i class="fa-solid fa-trash"></i> Hapus
                 </button>
                 <button id="btnSaveResult" class="btn-action btn-save">
-                    <i class="fa-solid fa-floppy-disk"></i> Simpan
+                    <i class="fa-solid fa-floppy-disk"></i> Lanjut Simpan
                 </button>
             </div>
         `;
@@ -184,31 +243,105 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sidebarContent) {
             sidebarContent.innerHTML = html;
             
-            // --- EVENT LISTENER TOMBOL HAPUS ---
             document.getElementById('btnCancelResult').addEventListener('click', () => {
-                // 1. Hapus layer dari peta
                 if (currentLayer) {
                     drawnItems.removeLayer(currentLayer);
                     currentLayer = null;
                 }
-                // 2. Tutup sidebar
                 sidebar.classList.remove('open');
             });
 
-            // --- EVENT LISTENER TOMBOL SIMPAN ---
             document.getElementById('btnSaveResult').addEventListener('click', () => {
-                // Di sini nanti logika kirim ke Backend (AJAX/Fetch)
-                console.log("Data Geometri:", JSON.stringify(geojsonData));
-                console.log("Data Wilayah:", results);
+                const coords = geojsonData.geometry.coordinates;
+                const encodedPath = encodePolyline(coords);
                 
-                alert("Tombol Simpan ditekan! Data sudah siap dikirim (Cek Console).");
+                const inputPaths = document.getElementById('inputPaths');
+                if(inputPaths) inputPaths.value = encodedPath;
+
+                if(!currentDetectedDesaId) {
+                    alert("Wilayah desa tidak terdeteksi. Pastikan menggambar di dalam area yang valid.");
+                    return;
+                }
+                
+                formModal.classList.remove('hidden');
             });
         }
-
         if (sidebar) sidebar.classList.add('open');
     }
 
-    // I. EVENT HANDLER LAINNYA
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    if(closeModalBtn) {
+        closeModalBtn.addEventListener('click', () => {
+            formModal.classList.add('hidden');
+        });
+    }
+
+    // --- BAGIAN SUBMIT FORM DENGAN PREVIEW JSON ---
+    if(form) {
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            if(!apiToken) { alert("Sesi kadaluarsa, silakan login kembali."); return; }
+
+            // 1. Ambil data form
+            const formData = new FormData(form);
+            
+            // 2. Konversi FormData ke Object biasa agar bisa dijadikan JSON String
+            const dataObj = {};
+            formData.forEach((value, key) => (dataObj[key] = value));
+
+            // 3. Tampilkan Confirm Dialog dengan Preview JSON
+            const userConfirmed = confirm(
+                "PREVIEW DATA YANG AKAN DIKIRIM:\n\n" + 
+                JSON.stringify(dataObj, null, 2) + 
+                "\n\nLanjutkan simpan?"
+            );
+
+            // 4. Jika user klik Cancel, batalkan proses
+            if (!userConfirmed) {
+                return;
+            }
+
+            // 5. Jika OK, Lanjut kirim ke Server
+            const btnSubmit = form.querySelector('button[type="submit"]');
+            const originalText = btnSubmit.innerText;
+            
+            btnSubmit.innerText = "Menyimpan...";
+            btnSubmit.disabled = true;
+
+            fetch('/ruasjalan', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiToken}`,
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === 'error' || data.message) {
+                     alert("Gagal: " + (data.message || JSON.stringify(data)));
+                } else {
+                    alert("Berhasil menyimpan data Ruas Jalan!");
+                    formModal.classList.add('hidden');
+                    sidebar.classList.remove('open');
+                    drawnItems.clearLayers();
+                    form.reset();
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Terjadi kesalahan sistem.");
+            })
+            .finally(() => {
+                btnSubmit.innerText = originalText;
+                btnSubmit.disabled = false;
+            });
+        });
+    }
+
+    // --- PROFILE & SIDEBAR UI ---
     const profileBtn = document.getElementById('profileBtn');
     if (profileBtn) {
         profileBtn.addEventListener('click', (e) => {

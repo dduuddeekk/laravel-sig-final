@@ -3,13 +3,15 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Http;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\MapController;
+use App\Http\Controllers\RoadController;
+use App\Http\Controllers\RegionController;
 
 Route::get('/', function () {
     $user = null;
     $token = session('api_token');
 
     if ($token) {
-        // PERBAIKAN: Tambahkan withoutVerifying() di sini
         $response = Http::withoutVerifying()->withToken($token)->get('https://gisapis.manpits.xyz/api/user');
         
         if ($response->successful()) {
@@ -28,3 +30,9 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+Route::get('/meksisting', [MapController::class, 'getExistingJalan']);
+Route::get('/mjenisjalan', [MapController::class, 'getJenisJalan']);
+Route::get('/mkondisi', [MapController::class, 'getKondisiJalan']);
+
+Route::post('/ruasjalan', [RoadController::class, 'addNewRuasJalan']);

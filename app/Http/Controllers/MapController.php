@@ -11,7 +11,7 @@ class MapController extends Controller
 {
     public function getExistingJalan(Request $request) {
         $baseUrl = env('API_URL');
-        $endPoint = '/meksisting';
+        $endPoint = 'meksisting';
         $apiUrl = $baseUrl . $endPoint;
 
         $cacheKey = 'master_eksisting_data';
@@ -58,7 +58,7 @@ class MapController extends Controller
 
     public function getJenisJalan(Request $request) {
         $baseUrl = env('API_URL');
-        $endPoint = '/mjenisjalan';
+        $endPoint = 'mjenisjalan';
         $apiUrl = $baseUrl . $endPoint;
 
         $cacheKey = 'master_jenis_jalan_data';
@@ -105,7 +105,7 @@ class MapController extends Controller
 
     public function getKondisiJalan(Request $request) {
         $baseUrl = env('API_URL');
-        $endPoint = '/mkondisi';
+        $endPoint = 'mkondisi';
         $apiUrl = $baseUrl . $endPoint;
 
         $cacheKey = 'master_kondisi_jalan_data';
