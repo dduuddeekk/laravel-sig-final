@@ -4,109 +4,67 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Log; // Cache tidak perlu di-use lagi kalau tidak dipakai
 
 class RoadController extends Controller
 {
+    // --- HAPUS CACHE DI SINI AGAR DATA SELALU UPDATE ---
     public function getAllRuasJalan(Request $request) {
         $baseUrl = env('API_URL');
         $endPoint = 'ruasjalan';
-        $apiUrl = $baseUrl . $endPoint;
-
-        $cacheKey = 'all_ruas_jalan_data';
-        $cacheTime = 60 * 60 * 24;
+        
+        // Pastikan URL rapi (handle slash)
+        $apiUrl = rtrim($baseUrl, '/') . '/' . $endPoint;
 
         try {
-            $data = Cache::remember($cacheKey, $cacheTime, function () use ($apiUrl, $request) {
-                $token = $request->bearerToken();
+            $token = $request->bearerToken();
 
-                $response = Http::withoutVerifying()
-                    ->withToken($token)
-                    ->get($apiUrl);
+            // LANGSUNG GET KE API, TIDAK ADA CACHE::REMEMBER
+            $response = Http::withoutVerifying()
+                ->withToken($token)
+                ->get($apiUrl);
 
-                if ($response->failed()) {
-                    throw new \Exception($response->body(), $response->status());
-                }
+            if ($response->failed()) {
+                throw new \Exception($response->body(), $response->status());
+            }
 
-                return $response->json();
-            });
-
-            return response()->json($data, 200);
+            return response()->json($response->json(), 200);
         } catch (\Exception $e) {
             $statusCode = $e->getCode();
-            if ($statusCode < 100 || $statusCode > 599) {
-                $statusCode = 500;
-            }
+            if ($statusCode < 100 || $statusCode > 599) $statusCode = 500;
+            
+            $errorBody = json_decode($e->getMessage(), true) ?? [
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ];
 
-            $errorBody = json_decode($e->getMessage(), true);
-
-            if (!$errorBody) {
-                $errorBody = [
-                    'status' => 'error',
-                    'message' => $e->getMessage()
-                ];
-            }
-
-            Cache::forget($cacheKey);
-
-            Log::error('Ruas Jalan API Error - ' . $statusCode . ': ' . $e->getMessage());
-
+            Log::error('Get All Ruas Jalan Error: ' . $e->getMessage());
             return response()->json($errorBody, $statusCode);
         }
     }
 
+    // ... (Fungsi getRuasJalanById, addNewRuasJalan, editRuasJalanById tetap sama) ...
+    // Pastikan editRuasJalanById juga sudah pakai asJson() seperti pembahasan sebelumnya
+    
     public function getRuasJalanById(Request $request, $id) {
         $baseUrl = env('API_URL');
-        $endPoint = '/ruasjalan';
-        $apiUrl = $baseUrl . $endPoint;
-
-        $cacheKey = 'ruas_jalan_data_' . $id;
-        $cacheTime = 60 * 60 * 24;
+        $apiUrl = rtrim($baseUrl, '/') . '/ruasjalan/' . $id;
 
         try {
-            $data = Cache::remember($cacheKey, $cacheTime, function () use ($apiUrl, $request) {
-                $token = $request->bearerToken();
+            $token = $request->bearerToken();
+            $response = Http::withoutVerifying()->withToken($token)->get($apiUrl);
 
-                $response = Http::withoutVerifying()
-                    ->withToken($token)
-                    ->get($apiUrl);
+            if ($response->failed()) throw new \Exception($response->body(), $response->status());
 
-                if ($response->failed()) {
-                    throw new \Exception($response->body(), $response->status());
-                }
-
-                return $response->json();
-            });
-
-            return response()->json($data, 200);
+            return response()->json($response->json(), 200);
         } catch (\Exception $e) {
-            $statusCode = $e->getCode();
-            if ($statusCode < 100 || $statusCode > 599) {
-                $statusCode = 500;
-            }
-
-            $errorBody = json_decode($e->getMessage(), true);
-
-            if (!$errorBody) {
-                $errorBody = [
-                    'status' => 'error',
-                    'message' => $e->getMessage()
-                ];
-            }
-
-            Cache::forget($cacheKey);
-
-            Log::error('Ruas Jalan By Id API Error - ' . $statusCode . ': ' . $e->getMessage());
-
-            return response()->json($errorBody, $statusCode);
+            return response()->json(['message' => $e->getMessage()], 500);
         }
     }
 
     public function addNewRuasJalan(Request $request) {
         $baseUrl = env('API_URL');
-        $endPoint = 'ruasjalan';
-        $apiUrl = $baseUrl . $endPoint;
+        $apiUrl = rtrim($baseUrl, '/') . '/ruasjalan';
 
         $request->validate([
             'paths' => 'required',
@@ -123,55 +81,37 @@ class RoadController extends Controller
 
         try {
             $token = $request->bearerToken();
+            
+            // Format Data Sesuai Postman
+            $payload = [
+                'paths' => $request->paths,
+                'desa_id' => (int) $request->desa_id,
+                'kode_ruas' => $request->kode_ruas,
+                'nama_ruas' => $request->nama_ruas,
+                'panjang' => (float) $request->panjang,
+                'lebar' => (float) $request->lebar,
+                'eksisting_id' => (int) $request->eksisting_id,
+                'kondisi_id' => (int) $request->kondisi_id,
+                'jenisjalan_id' => (int) $request->jenisjalan_id,
+                'keterangan' => $request->keterangan,
+            ];
 
             $response = Http::withoutVerifying()
                 ->withToken($token)
-                ->asForm() 
-                ->post($apiUrl, [
-                    'paths' => $request->paths,
-                    'desa_id' => $request->desa_id,
-                    'kode_ruas' => $request->kode_ruas,
-                    'nama_ruas' => $request->nama_ruas,
-                    'panjang' => $request->panjang,
-                    'lebar' => $request->lebar,
-                    'eksisting_id' => $request->eksisting_id,
-                    'kondisi_id' => $request->kondisi_id,
-                    'jenisjalan_id' => $request->jenisjalan_id,
-                    'keterangan' => $request->keterangan,
-                ]);
+                ->asJson() // JSON Request
+                ->post($apiUrl, $payload);
             
-            if ($response->failed()) {
-                throw new \Exception($response->body(), $response->status());
-            }
-
-            Cache::forget('all_ruas_jalan_data');
+            if ($response->failed()) throw new \Exception($response->body(), $response->status());
 
             return response()->json($response->json(), $response->status());
         } catch (\Exception $e) {
-            $statusCode = $e->getCode();
-            if ($statusCode < 100 || $statusCode > 599) {
-                $statusCode = 500;
-            }
-
-            $errorBody = json_decode($e->getMessage(), true);
-
-            if (!$errorBody) {
-                $errorBody = [
-                    'status' => 'error',
-                    'message' => $e->getMessage()
-                ];
-            }
-
-            Log::error('Add Ruas Jalan API Error - ' . $statusCode . ': ' . $e->getMessage());
-
-            return response()->json($errorBody, $statusCode);
+            return response()->json(['message' => $e->getMessage()], 500);
         }
     }
 
     public function editRuasJalanById(Request $request, $id) {
         $baseUrl = env('API_URL');
-        $endPoint = 'ruasjalan';
-        $apiUrl = $baseUrl . $endPoint;
+        $apiUrl = rtrim($baseUrl, '/') . '/ruasjalan/' . $id;
 
         $request->validate([
             'paths' => 'required',
@@ -189,47 +129,29 @@ class RoadController extends Controller
         try {
             $token = $request->bearerToken();
 
+            $payload = [
+                'paths' => $request->paths,
+                'desa_id' => (int) $request->desa_id,
+                'kode_ruas' => $request->kode_ruas,
+                'nama_ruas' => $request->nama_ruas,
+                'panjang' => (float) $request->panjang,
+                'lebar' => (float) $request->lebar,
+                'eksisting_id' => (int) $request->eksisting_id,
+                'kondisi_id' => (int) $request->kondisi_id,
+                'jenisjalan_id' => (int) $request->jenisjalan_id,
+                'keterangan' => $request->keterangan,
+            ];
+
             $response = Http::withoutVerifying()
                 ->withToken($token)
-                ->asForm() 
-                ->put($apiUrl, [
-                    'paths' => $request->paths,
-                    'desa_id' => $request->desa_id,
-                    'kode_ruas' => $request->kode_ruas,
-                    'nama_ruas' => $request->nama_ruas,
-                    'panjang' => $request->panjang,
-                    'lebar' => $request->lebar,
-                    'eksisting_id' => $request->eksisting_id,
-                    'kondisi_id' => $request->kondisi_id,
-                    'jenisjalan_id' => $request->jenisjalan_id,
-                    'keterangan' => $request->keterangan,
-                ]);
+                ->asJson()
+                ->put($apiUrl, $payload);
             
-            if ($response->failed()) {
-                throw new \Exception($response->body(), $response->status());
-            }
-
-            Cache::forget('ruas_jalan_data_' . $id);
+            if ($response->failed()) throw new \Exception($response->body(), $response->status());
 
             return response()->json($response->json(), $response->status());
         } catch (\Exception $e) {
-            $statusCode = $e->getCode();
-            if ($statusCode < 100 || $statusCode > 599) {
-                $statusCode = 500;
-            }
-
-            $errorBody = json_decode($e->getMessage(), true);
-
-            if (!$errorBody) {
-                $errorBody = [
-                    'status' => 'error',
-                    'message' => $e->getMessage()
-                ];
-            }
-
-            Log::error('Edit Ruas Jalan API Error - ' . $statusCode . ': ' . $e->getMessage());
-
-            return response()->json($errorBody, $statusCode);
+            return response()->json(['message' => $e->getMessage()], 500);
         }
     }
 }

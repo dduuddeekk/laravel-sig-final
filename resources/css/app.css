@@ -1,6 +1,3 @@
-/* =========================================
-   BAGIAN 1: TAILWIND CONFIG (JANGAN HAPUS)
-   ========================================= */
 @import 'tailwindcss';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
@@ -13,21 +10,13 @@
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
-/* =========================================
-   BAGIAN 2: CUSTOM CSS LEAFLET & UI
-   (Paste kode saya di bawah sini)
-   ========================================= */
-
 :root {
-    /* Color Palette - Kita bikin variabel sendiri biar aman */
     --primary-color: #3b82f6;       
     --primary-hover: #2563eb;       
     --danger-color: #ef4444;        
     --danger-bg: #fee2e2;           
-    
     --text-dark: #1f2937;
     --text-muted: #6b7280;
-    
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
@@ -35,19 +24,199 @@
 body {
     margin: 0;
     padding: 0;
-    /* Menggunakan font dari Tailwind yang Anda definisikan di atas */
     font-family: var(--font-sans); 
     overflow: hidden; 
 }
 
-/* --- MAP CONTAINER (WAJIB ADA HEIGHT) --- */
 #map {
     height: 100vh;
     width: 100%;
     z-index: 1;
 }
 
-/* --- AUTH UI (POJOK KANAN ATAS) --- */
+/* --- BURGER BUTTON & LEFT SIDEBAR --- */
+.burger-btn {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 1000;
+    background: white;
+    border: none;
+    width: 45px;
+    height: 45px;
+    border-radius: 8px;
+    box-shadow: var(--shadow-md);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: var(--text-dark);
+    transition: all 0.3s;
+}
+
+.burger-btn:hover { background: #f9fafb; }
+
+.left-sidebar {
+    position: fixed;
+    top: 0;
+    left: -350px;
+    width: 320px;
+    height: 100%;
+    background: white;
+    z-index: 1100;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    transition: left 0.3s ease-in-out;
+    display: flex;
+    flex-direction: column;
+}
+
+.left-sidebar.active { left: 0; }
+
+.ls-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--primary-color);
+    color: white;
+}
+
+.ls-header h3 { margin: 0; font-size: 1rem; font-weight: 600; }
+.close-ls-btn { cursor: pointer; color: white; opacity: 0.9; }
+.close-ls-btn:hover { opacity: 1; }
+
+.ls-search { padding: 15px; border-bottom: 1px solid #e5e7eb; background: #f9fafb; }
+
+.ls-search input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    outline: none;
+    font-size: 0.9rem;
+}
+
+.ls-search input:focus { border-color: var(--primary-color); }
+
+.ls-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.road-item {
+    padding: 12px 15px;
+    border-bottom: 1px solid #f3f4f6;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.road-item:hover { background: #eff6ff; }
+.road-item h4 { margin: 0 0 5px; font-size: 0.95rem; color: var(--text-dark); font-weight: 600; }
+
+.road-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    background: #e5e7eb;
+    border-radius: 99px;
+    font-size: 0.7rem;
+    margin-right: 5px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+/* --- RIGHT SIDEBAR --- */
+.sidebar-result {
+    position: absolute;
+    top: 0;
+    right: -400px;
+    width: 350px;
+    height: 100vh;
+    background: white;
+    z-index: 1100;
+    box-shadow: -4px 0 25px rgba(0,0,0,0.1);
+    transition: right 0.3s ease-in-out;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-result.open { right: 0; }
+
+.sidebar-header {
+    padding: 20px;
+    background-color: var(--primary-color);
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sidebar-header h3 { margin: 0; font-size: 18px; font-weight: 600; }
+.close-sidebar { cursor: pointer; font-size: 20px; padding: 5px; opacity: 0.8; }
+.sidebar-content { padding: 24px; overflow-y: auto; flex: 1; }
+
+.result-group {
+    margin-bottom: 24px;
+    border-bottom: 1px solid #f3f4f6;
+    padding-bottom: 12px;
+}
+.result-group:last-child { border: none; }
+
+.result-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+}
+
+.result-value {
+    font-size: 16px;
+    color: var(--text-dark);
+    font-weight: 600;
+    line-height: 1.6;
+}
+
+.sidebar-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.btn-action {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-cancel { background-color: #ffebee; color: #d32f2f; }
+.btn-cancel:hover { background-color: #ffcdd2; }
+.btn-save { background-color: #e3f2fd; color: #1976d2; }
+.btn-save:hover { background-color: #bbdefb; }
+
+.empty-state {
+    text-align: center;
+    color: #9ca3af;
+    margin-top: 60px;
+    font-style: italic;
+}
+
+/* --- AUTH BUTTONS (TOP RIGHT) --- */
 .top-right-bar {
     position: absolute;
     top: 20px;
@@ -71,20 +240,12 @@ body {
 }
 
 .btn:active { transform: scale(0.95); }
-
-.btn-login {
-    background-color: #ffffff;
-    color: var(--primary-color);
-}
+.btn-login { background-color: #ffffff; color: var(--primary-color); }
 .btn-login:hover { background-color: #f9fafb; }
-
-.btn-register {
-    background-color: var(--primary-color);
-    color: white;
-}
+.btn-register { background-color: var(--primary-color); color: white; }
 .btn-register:hover { background-color: var(--primary-hover); }
 
-/* --- Profile & Dropdown --- */
+/* --- PROFILE & DROPDOWN --- */
 .profile-container { position: relative; }
 
 .profile-btn {
@@ -160,7 +321,7 @@ body {
 }
 .btn-logout:hover { background-color: #fecaca; }
 
-/* --- FAB (TOMBOL GAMBAR) --- */
+/* --- FAB BUTTON --- */
 .fab-container {
     position: absolute;
     bottom: 30px;
@@ -184,144 +345,11 @@ body {
     transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.fab-btn:hover {
-    background-color: var(--primary-hover);
-    transform: scale(1.1);
-}
-
+.fab-btn:hover { background-color: var(--primary-hover); transform: scale(1.1); }
 .fab-btn:active { transform: scale(0.9); }
+.fab-btn.active { background-color: var(--danger-color) !important; }
 
-.fab-btn.active {
-    background-color: var(--danger-color) !important;
-}
-
-/* --- SIDEBAR RESULT --- */
-.sidebar-result {
-    position: absolute;
-    top: 0;
-    right: -400px;
-    width: 350px;
-    height: 100vh;
-    background: white;
-    z-index: 1100;
-    box-shadow: -4px 0 25px rgba(0,0,0,0.1);
-    transition: right 0.3s ease-in-out;
-    display: flex;
-    flex-direction: column;
-}
-
-.sidebar-result.open { right: 0; }
-
-.sidebar-header {
-    padding: 20px;
-    background-color: var(--primary-color);
-    color: white;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.sidebar-header h3 { margin: 0; font-size: 18px; font-weight: 600; }
-.close-sidebar { cursor: pointer; font-size: 20px; padding: 5px; opacity: 0.8; }
-.close-sidebar:hover { opacity: 1; }
-
-.sidebar-content { padding: 24px; overflow-y: auto; flex: 1; }
-
-.result-group {
-    margin-bottom: 24px;
-    border-bottom: 1px solid #f3f4f6;
-    padding-bottom: 12px;
-}
-.result-group:last-child { border: none; }
-
-.result-label {
-    font-size: 11px;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    margin-bottom: 6px;
-}
-
-.result-value {
-    font-size: 16px;
-    color: var(--text-dark);
-    font-weight: 600;
-    line-height: 1.6;
-}
-
-.empty-state {
-    text-align: center;
-    color: #9ca3af;
-    margin-top: 60px;
-    font-style: italic;
-}
-
-/* --- LOADING OVERLAY --- */
-#loading {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(255, 255, 255, 0.95);
-    padding: 20px 40px;
-    border-radius: 12px;
-    z-index: 2000;
-    font-weight: 600;
-    color: var(--primary-color);
-    display: none;
-    box-shadow: var(--shadow-lg);
-    border: 1px solid #e5e7eb;
-}
-
-@keyframes slideDown {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* ... css yang sudah ada ... */
-
-/* Style untuk Tombol Aksi di Sidebar */
-.sidebar-actions {
-    margin-top: 20px;
-    display: flex;
-    gap: 10px;
-    padding-top: 15px;
-    border-top: 1px solid #eee;
-}
-
-.btn-action {
-    flex: 1;
-    padding: 10px;
-    border: none;
-    border-radius: 6px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-.btn-cancel {
-    background-color: #ffebee;
-    color: #d32f2f;
-}
-
-.btn-cancel:hover {
-    background-color: #ffcdd2;
-}
-
-.btn-save {
-    background-color: #e3f2fd;
-    color: #1976d2;
-}
-
-.btn-save:hover {
-    background-color: #bbdefb;
-}
-
+/* --- MODAL FORM --- */
 .modal-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.5); z-index: 3000;
@@ -346,8 +374,32 @@ body {
 .form-control {
     width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;
 }
+.form-control:focus { border-color: var(--primary-color); outline: none; }
+
 .btn-submit-form {
     width: 100%; background: #27ae60; color: white; border: none;
     padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px;
 }
 .btn-submit-form:hover { background: #219150; }
+
+/* --- LOADING & ANIMATION --- */
+#loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.95);
+    padding: 20px 40px;
+    border-radius: 12px;
+    z-index: 2000;
+    font-weight: 600;
+    color: var(--primary-color);
+    display: none;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid #e5e7eb;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

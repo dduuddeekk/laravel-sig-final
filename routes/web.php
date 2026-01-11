@@ -35,4 +35,6 @@ Route::get('/meksisting', [MapController::class, 'getExistingJalan']);
 Route::get('/mjenisjalan', [MapController::class, 'getJenisJalan']);
 Route::get('/mkondisi', [MapController::class, 'getKondisiJalan']);
 
+Route::get('/ruasjalan', [RoadController::class, 'getAllRuasJalan']);
 Route::post('/ruasjalan', [RoadController::class, 'addNewRuasJalan']);
+Route::put('/ruasjalan/{id}', [RoadController::class, 'editRuasJalanById']);
