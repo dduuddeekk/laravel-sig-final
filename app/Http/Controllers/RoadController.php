@@ -8,18 +8,15 @@ use Illuminate\Support\Facades\Log; // Cache tidak perlu di-use lagi kalau tidak
 
 class RoadController extends Controller
 {
-    // --- HAPUS CACHE DI SINI AGAR DATA SELALU UPDATE ---
     public function getAllRuasJalan(Request $request) {
         $baseUrl = env('API_URL');
         $endPoint = 'ruasjalan';
         
-        // Pastikan URL rapi (handle slash)
         $apiUrl = rtrim($baseUrl, '/') . '/' . $endPoint;
 
         try {
             $token = $request->bearerToken();
 
-            // LANGSUNG GET KE API, TIDAK ADA CACHE::REMEMBER
             $response = Http::withoutVerifying()
                 ->withToken($token)
                 ->get($apiUrl);
@@ -42,9 +39,6 @@ class RoadController extends Controller
             return response()->json($errorBody, $statusCode);
         }
     }
-
-    // ... (Fungsi getRuasJalanById, addNewRuasJalan, editRuasJalanById tetap sama) ...
-    // Pastikan editRuasJalanById juga sudah pakai asJson() seperti pembahasan sebelumnya
     
     public function getRuasJalanById(Request $request, $id) {
         $baseUrl = env('API_URL');
@@ -82,7 +76,6 @@ class RoadController extends Controller
         try {
             $token = $request->bearerToken();
             
-            // Format Data Sesuai Postman
             $payload = [
                 'paths' => $request->paths,
                 'desa_id' => (int) $request->desa_id,
@@ -98,7 +91,7 @@ class RoadController extends Controller
 
             $response = Http::withoutVerifying()
                 ->withToken($token)
-                ->asJson() // JSON Request
+                ->asJson()
                 ->post($apiUrl, $payload);
             
             if ($response->failed()) throw new \Exception($response->body(), $response->status());
@@ -152,6 +145,30 @@ class RoadController extends Controller
             return response()->json($response->json(), $response->status());
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function deleteRuasJalanById(Request $request, $id) {
+        $baseUrl = env('API_URL');
+        $apiUrl = rtrim($baseUrl, '/') . '/ruasjalan/' . $id;
+
+        try {
+            $token = $request->bearerToken();
+
+            $response = Http::withoutVerifying()
+                ->withToken($token)
+                ->delete($apiUrl);
+
+            if ($response->failed()) {
+                throw new \Exception($response->body(), $response->status());
+            }
+
+            return response()->json($response->json(), $response->status());
+        } catch (\Exception $e) {
+            $statusCode = $e->getCode();
+            if ($statusCode < 100 || $statusCode > 599) $statusCode = 500;
+
+            return response()->json(['message' => $e->getMessage()], $statusCode);
         }
     }
 }

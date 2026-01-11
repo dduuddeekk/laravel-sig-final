@@ -11,50 +11,6 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <style>
-        .resize-handle {
-            background: white;
-            border: 2px solid #3b82f6;
-            border-radius: 50%;
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
-            cursor: ew-resize !important;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: #3b82f6;
-            font-size: 12px;
-        }
-
-        .road-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px;
-            justify-content: flex-end;
-        }
-
-        .btn-icon {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 14px;
-            padding: 5px;
-            color: #666;
-            transition: color 0.2s;
-        }
-
-        .btn-icon:hover { color: #3b82f6; }
-        .btn-icon.delete:hover { color: #ef4444; }
-
-        .edit-container {
-            padding: 15px;
-            background: #fff;
-            height: 100%;
-            overflow-y: auto;
-        }
-
-        .hidden { display: none !important; }
-    </style>
 </head>
 
 <body>

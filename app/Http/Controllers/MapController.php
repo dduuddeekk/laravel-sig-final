@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class MapController extends Controller
@@ -14,25 +13,18 @@ class MapController extends Controller
         $endPoint = 'meksisting';
         $apiUrl = $baseUrl . $endPoint;
 
-        $cacheKey = 'master_eksisting_data';
-        $cacheTime = 60 * 60 * 24;
-
         try {
-            $data = Cache::remember($cacheKey, $cacheTime, function () use ($apiUrl, $request) {
-                $token = $request->bearerToken();
+            $token = $request->bearerToken();
 
-                $response = Http::withoutVerifying()
-                    ->withToken($token)
-                    ->get($apiUrl);
+            $response = Http::withoutVerifying()
+                ->withToken($token)
+                ->get($apiUrl);
 
-                if ($response->failed()) {
-                    throw new \Exception($response->body(), $response->status());
-                }
+            if ($response->failed()) {
+                throw new \Exception($response->body(), $response->status());
+            }
 
-                return $response->json();
-            });
-
-            return response()->json($data, 200);
+            return response()->json($response->json(), 200);
         } catch (\Exception $e) {
             $statusCode = $e->getCode();
             if ($statusCode < 100 || $statusCode > 599) {
@@ -47,8 +39,6 @@ class MapController extends Controller
                     'message' => $e->getMessage()
                 ];
             }
-
-            Cache::forget($cacheKey);
 
             Log::error('Jalan API Error - ' . $statusCode . ': ' . $e->getMessage());
 
@@ -61,25 +51,18 @@ class MapController extends Controller
         $endPoint = 'mjenisjalan';
         $apiUrl = $baseUrl . $endPoint;
 
-        $cacheKey = 'master_jenis_jalan_data';
-        $cacheTime = 60 * 60 * 24;
-
         try {
-            $data = Cache::remember($cacheKey, $cacheTime, function () use ($apiUrl, $request) {
-                $token = $request->bearerToken();
+            $token = $request->bearerToken();
 
-                $response = Http::withoutVerifying()
-                    ->withToken($token)
-                    ->get($apiUrl);
+            $response = Http::withoutVerifying()
+                ->withToken($token)
+                ->get($apiUrl);
 
-                if ($response->failed()) {
-                    throw new \Exception($response->body(), $response->status());
-                }
+            if ($response->failed()) {
+                throw new \Exception($response->body(), $response->status());
+            }
 
-                return $response->json();
-            });
-
-            return response()->json($data, 200);
+            return response()->json($response->json(), 200);
         } catch (\Exception $e) {
             $statusCode = $e->getCode();
             if ($statusCode < 100 || $statusCode > 599) {
@@ -94,8 +77,6 @@ class MapController extends Controller
                     'message' => $e->getMessage()
                 ];
             }
-
-            Cache::forget($cacheKey);
 
             Log::error('Jenis Jalan API Error - ' . $statusCode . ': ' . $e->getMessage());
 
@@ -108,25 +89,18 @@ class MapController extends Controller
         $endPoint = 'mkondisi';
         $apiUrl = $baseUrl . $endPoint;
 
-        $cacheKey = 'master_kondisi_jalan_data';
-        $cacheTime = 60 * 60 * 24;
-
         try {
-            $data = Cache::remember($cacheKey, $cacheTime, function () use ($apiUrl, $request) {
-                $token = $request->bearerToken();
+            $token = $request->bearerToken();
 
-                $response = Http::withoutVerifying()
-                    ->withToken($token)
-                    ->get($apiUrl);
+            $response = Http::withoutVerifying()
+                ->withToken($token)
+                ->get($apiUrl);
 
-                if ($response->failed()) {
-                    throw new \Exception($response->body(), $response->status());
-                }
+            if ($response->failed()) {
+                throw new \Exception($response->body(), $response->status());
+            }
 
-                return $response->json();
-            });
-
-            return response()->json($data, 200);
+            return response()->json($response->json(), 200);
         } catch (\Exception $e) {
             $statusCode = $e->getCode();
             if ($statusCode < 100 || $statusCode > 599) {
@@ -141,8 +115,6 @@ class MapController extends Controller
                     'message' => $e->getMessage()
                 ];
             }
-
-            Cache::forget($cacheKey);
 
             Log::error('Kondisi Jalan API Error - ' . $statusCode . ': ' . $e->getMessage());
 
